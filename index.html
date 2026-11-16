@@ -93,6 +93,7 @@ pre.alert b{color:var(--crit);font-weight:600}
 .contactbox .row .k{font-family:var(--mono);font-size:12px;color:var(--muted);text-transform:uppercase;padding-top:2px}
 .btn{display:inline-block;background:var(--accent);color:#1A1205;font-weight:600;padding:10px 16px;border-radius:6px}
 .btn:hover{text-decoration:none;filter:brightness(1.08)}
+code{font-family:var(--mono);font-size:.9em;background:#1C2638;padding:1px 5px;border-radius:4px}
 footer{border-top:1px solid var(--line);padding:22px 0 40px;color:var(--muted);font-size:13px;font-family:var(--mono)}
 @media (max-width:820px){
   .tiles{grid-template-columns:repeat(2,1fr)}
@@ -135,17 +136,17 @@ footer{border-top:1px solid var(--line);padding:22px 0 40px;color:var(--muted);f
   </header>
 
   <div class="tiles" aria-label="Portfolio summary">
-    <div class="tile"><div class="k">Cases closed</div><div class="v">5</div><div class="s">Hands-on labs and research</div></div>
+    <div class="tile"><div class="k">Cases closed</div><div class="v">5</div><div class="s">Labs and automation, all on GitHub</div></div>
     <div class="tile"><div class="k">ATT&amp;CK mapped</div><div class="v">T1110</div><div class="s">Brute Force, detected in Wazuh</div></div>
-    <div class="tile"><div class="k">Identity labs</div><div class="v">3</div><div class="s">Entra ID, SSO + MFA, AD</div></div>
-    <div class="tile"><div class="k">Certification</div><div class="v">Sec+</div><div class="s">CompTIA Security+ in progress</div></div>
+    <div class="tile"><div class="k">Security findings</div><div class="v">12</div><div class="s">6 in AD, 6 in Entra ID</div></div>
+    <div class="tile"><div class="k">PowerShell scripts</div><div class="v">2</div><div class="s">Onboarding + access review</div></div>
   </div>
 
   <section aria-labelledby="now-h">
     <h2 id="now-h">What I'm working on now</h2>
     <div class="now">
       <div class="card"><div class="k" style="color:var(--warn)">Certification · in progress</div><h3>CompTIA Security+</h3><p>Studying threats, identity, network security and incident response. Next step: schedule the exam.</p></div>
-      <div class="card"><div class="k" style="color:var(--info)">Next lab · planned</div><h3>PowerShell user automation</h3><p>Scripting joiner, mover and leaver changes so new accounts and offboarding run the same way every time.</p></div>
+      <div class="card"><div class="k" style="color:var(--info)">Next lab · planned</div><h3>Wazuh custom rule + FIM</h3><p>Writing my own Wazuh rule, testing it with a matching attack, and turning on File Integrity Monitoring.</p></div>
       <div class="card"><div class="k" style="color:var(--ok)">Job search · active</div><h3>Open to SOC, IAM and IT support roles</h3><p>Entry level, any US location. Available for nights, weekends and rotating shifts. Can start immediately.</p></div>
     </div>
   </section>
@@ -157,32 +158,31 @@ footer{border-top:1px solid var(--line);padding:22px 0 40px;color:var(--muted);f
       <details class="case" style="--sev:var(--crit)" open>
         <summary>
           <span class="case-id">CASE-001</span>
-          <h3>SMB brute-force attack detected in a home SOC lab</h3>
+          <h3>Home SOC lab: brute force detected, scan missed</h3>
           <span class="chips"><span class="chip crit">Detection</span><span class="chip ok">Closed</span></span>
-          <p class="one">Built a Wazuh SIEM lab, attacked a Windows 11 host from Kali Linux, and confirmed the alerts mapped to MITRE ATT&amp;CK T1110.</p>
+          <p class="one">Kali attacks, Wazuh watches. The SMB brute force was caught and mapped to MITRE T1110. The Nmap scan was invisible, which exposed a real coverage gap.</p>
           <span class="toggle"><span class="o">Hide case details ▲</span><span class="c">Open case details ▼</span></span>
         </summary>
         <div class="body">
           <ol class="timeline">
-            <li><span class="step">Setup</span><span>Built a virtual lab in VirtualBox on an isolated host-only network (192.168.56.0/24) so attack traffic stays off the home network.</span></li>
-            <li><span class="step">Deploy</span><span>Installed Wazuh 4.14 on an Ubuntu VM as the SIEM and enrolled Windows 11 as a monitored endpoint with the Wazuh agent.</span></li>
-            <li><span class="step">Attack</span><span>From Kali Linux, ran an SMB brute-force attack against Windows 11 with NetExec to generate real failed-logon events. Metasploitable2 served as an extra target.</span></li>
-            <li><span class="step">Detect</span><span>Wazuh fired rule 60122 (logon failure) and rule 60204 (multiple failed logons). Reviewed the Windows Security events behind each alert and mapped the activity to T1110 Brute Force.</span></li>
-            <li><span class="step">Fix</span><span>Logs were not reaching the SIEM at first. Traced it through Windows Firewall rules, PowerShell elevation, an ossec.conf misconfiguration on the agent, and SMBv1 compatibility for NetExec.</span></li>
-            <li><span class="step">Report</span><span>Published a GitHub README with an architecture diagram, attack steps, alert screenshots and lessons learned.</span></li>
+            <li><span class="step">Setup</span><span>VirtualBox host-only network (192.168.56.0/24): Kali attacker, Metasploitable2 target, Wazuh 4.14.5 OVA (manager, indexer, dashboard), and my Windows 11 laptop as the monitored endpoint.</span></li>
+            <li><span class="step">Attack 1</span><span>Ran <code>nmap -sV</code> against Metasploitable2. Wazuh showed nothing, because the target had no agent. The SIEM can only see where it has eyes.</span></li>
+            <li><span class="step">Attack 2</span><span>Brute-forced SMB on the Windows endpoint with NetExec. Every failed login produced a Windows 4625 event.</span></li>
+            <li><span class="step">Detect</span><span>Rule 60122 (logon failure, level 5) fired per attempt, then rule 60204 (multiple failures, level 10) fired on the pattern. That escalation is what an analyst acts on.</span></li>
+            <li><span class="step">Fix</span><span>Agent installed but never connected: ossec.conf pointed at 0.0.0.0 instead of the manager IP. Install silently failed until run as administrator. Hydra could not talk to Windows 11 SMB, so I switched to NetExec and opened port 445 to the lab only, then removed the rule.</span></li>
           </ol>
           <div class="side">
             <div class="box">
-              <div class="k">Sample alert</div>
-<pre class="alert">rule.id:    <b>60204</b>
+              <div class="k">Alert</div>
+<pre class="alert">rule.id:    <b>60204</b>  (level 10)
 rule.desc:  Multiple Windows logon failures
-agent:      windows11
-src.host:   kali (192.168.56.0/24)
-mitre:      T1110 Brute Force
-status:     confirmed true positive</pre>
+event:      4625 (failed logon)
+agent:      somu (Windows 11)
+src:        kali 192.168.56.101
+mitre:      T1110 Brute Force</pre>
             </div>
-            <div class="box"><div class="k">Tools</div><div class="tags"><span class="tag">Wazuh 4.14</span><span class="tag">Ubuntu</span><span class="tag">Kali Linux</span><span class="tag">NetExec</span><span class="tag">Windows 11</span><span class="tag">Metasploitable2</span><span class="tag">VirtualBox</span><span class="tag">PowerShell</span></div></div>
-            <div class="box"><div class="k">Lessons learned</div><p>A detection is only as good as its log pipeline. Most of the work was making sure events actually reached the SIEM.</p></div>
+            <div class="box"><div class="k">Tools</div><div class="tags"><span class="tag">Wazuh 4.14.5</span><span class="tag">Kali Linux</span><span class="tag">Nmap</span><span class="tag">NetExec</span><span class="tag">Hydra</span><span class="tag">Metasploitable2</span><span class="tag">Windows 11</span><span class="tag">VirtualBox</span></div></div>
+            <div class="box"><div class="k">Lesson</div><p>"Installed" and "working" are not the same thing, and no alert does not mean no attack.</p></div>
             <div class="box"><div class="k">Evidence</div><p><a href="https://github.com/Somanathtallapu/Home-soc-lab">github.com/Somanathtallapu/Home-soc-lab</a></p></div>
           </div>
         </div>
@@ -191,21 +191,24 @@ status:     confirmed true positive</pre>
       <details class="case" style="--sev:var(--warn)">
         <summary>
           <span class="case-id">CASE-002</span>
-          <h3>User lifecycle in Microsoft Entra ID: joiner, mover, leaver</h3>
+          <h3>Active Directory identity lab on Windows Server 2025</h3>
           <span class="chips"><span class="chip warn">Identity</span><span class="chip ok">Closed</span></span>
-          <p class="one">Handled the full account lifecycle the way an IAM or help desk team does through access requests and offboarding tickets.</p>
+          <p class="one">Built the somu.local domain from scratch: joiner/mover/leaver, RBAC, delegated admin, Group Policy, password policy, gMSA and audit logging. Found and fixed 6 weak defaults.</p>
           <span class="toggle"><span class="o">Hide case details ▲</span><span class="c">Open case details ▼</span></span>
         </summary>
         <div class="body">
           <ol class="timeline">
-            <li><span class="step">Joiner</span><span>Created new user accounts in Microsoft Entra ID and added them to the security groups that matched their role.</span></li>
-            <li><span class="step">Mover</span><span>Handled a role change by removing access the user no longer needed and adding access for the new role.</span></li>
-            <li><span class="step">Leaver</span><span>Disabled departing users' accounts to block sign-in and removed their group-based access.</span></li>
-            <li><span class="step">Model</span><span>Managed permissions through security groups instead of one-by-one assignments, so access follows the role and is easy to review.</span></li>
+            <li><span class="step">Domain</span><span>Promoted DC01 with a static IP, AD DS and DNS; verified the A records; built Finance, HR and IT OUs and users with department and title metadata.</span></li>
+            <li><span class="step">JML</span><span>Access only through role groups. Movers lose old access to stop privilege creep. Leavers are disabled, not deleted, and stripped of groups.</span></li>
+            <li><span class="step">RBAC</span><span>AGDLP group design, nested groups, and <code>Get-ADGroupMember -Recursive</code> to answer "who actually has this access?"</span></li>
+            <li><span class="step">Delegate</span><span>Helpdesk can reset passwords in the HR OU only. Verified the ACEs, and confirmed no rights on Finance.</span></li>
+            <li><span class="step">Policy</span><span>Screen-lock GPO and precedence testing; a 20-character, lockout-after-3 PSO for Domain Admins; SPN service account vs gMSA.</span></li>
+            <li><span class="step">Audit</span><span>Enabled auditpol subcategories and tracked 4624/4625, 4720, 4728, 4740, 4769 and 5136, pivoting on Logon ID.</span></li>
           </ol>
           <div class="side">
-            <div class="box"><div class="k">Tools</div><div class="tags"><span class="tag">Microsoft Entra ID</span><span class="tag">Security groups</span></div></div>
-            <div class="box"><div class="k">Lessons learned</div><p>Group-based access keeps least privilege practical: when someone changes roles, you change their groups, not dozens of permissions.</p></div>
+            <div class="box"><div class="k">Key finding</div><p>A new PSO defaulted to <b>reversible password encryption</b>, a setting I never chose. Caught it by reading back every property, then fixed it.</p></div>
+            <div class="box"><div class="k">Tools</div><div class="tags"><span class="tag">Windows Server 2025</span><span class="tag">AD DS</span><span class="tag">DNS</span><span class="tag">Group Policy</span><span class="tag">PowerShell</span><span class="tag">auditpol</span></div></div>
+            <div class="box"><div class="k">Evidence</div><p><a href="https://github.com/Somanathtallapu/ad-identity-lab">github.com/Somanathtallapu/ad-identity-lab</a></p></div>
           </div>
         </div>
       </details>
@@ -213,43 +216,48 @@ status:     confirmed true positive</pre>
       <details class="case" style="--sev:var(--warn)">
         <summary>
           <span class="case-id">CASE-003</span>
-          <h3>Single sign-on with multi-factor authentication</h3>
+          <h3>Microsoft Entra ID: SSO, sign-in investigation and least privilege</h3>
           <span class="chips"><span class="chip warn">Identity</span><span class="chip ok">Closed</span></span>
-          <p class="one">Set up SSO for an enterprise app in Entra ID and required MFA, so one identity unlocks the app and a password alone is not enough.</p>
+          <p class="one">OIDC single sign-on with a real token, an authentication timeline rebuilt from sign-in logs, role escalation paths, and Conditional Access policies designed for rollout.</p>
           <span class="toggle"><span class="o">Hide case details ▲</span><span class="c">Open case details ▼</span></span>
         </summary>
         <div class="body">
           <ol class="timeline">
-            <li><span class="step">SSO</span><span>Added an enterprise application in Microsoft Entra ID and configured single sign-on for it.</span></li>
-            <li><span class="step">Assign</span><span>Assigned users and groups to the application so only approved people could sign in.</span></li>
-            <li><span class="step">MFA</span><span>Enforced multi-factor authentication on user sign-ins.</span></li>
-            <li><span class="step">Test</span><span>Signed in as test users to verify the flow end to end: SSO redirect, MFA prompt, then access.</span></li>
+            <li><span class="step">SSO</span><span>Registered an app, set redirect URIs and ID tokens, signed in and inspected the JWT: signature, issuer, audience, expiry.</span></li>
+            <li><span class="step">Investigate</span><span>Rebuilt a timeline from sign-in logs using Correlation ID: failed password (50126), password change, MFA completed, then an SSO token from an existing session.</span></li>
+            <li><span class="step">Roles</span><span>Mapped roles that quietly equal Global Admin and wrote a detection for accounts that assign privileged roles to themselves.</span></li>
+            <li><span class="step">CA design</span><span>Wrote 4 Conditional Access specs (MFA for admins and more) with a break-glass exclusion and report-only rollout. Designed, not deployed, since CA needs P1.</span></li>
           </ol>
           <div class="side">
-            <div class="box"><div class="k">Tools</div><div class="tags"><span class="tag">Microsoft Entra ID</span><span class="tag">Enterprise Applications</span><span class="tag">MFA</span></div></div>
-            <div class="box"><div class="k">Lessons learned</div><p>SSO cuts down on passwords people have to manage, and MFA protects the one identity that now opens everything.</p></div>
+            <div class="box"><div class="k">Detection rule</div>
+<pre class="alert">Category     = RoleManagement
+Activity     = "Add member to role"
+InitiatedBy  == Target
+-> <b>ALERT high</b></pre></div>
+            <div class="box"><div class="k">Tools</div><div class="tags"><span class="tag">Entra ID</span><span class="tag">OIDC</span><span class="tag">Sign-in logs</span><span class="tag">Audit logs</span><span class="tag">Microsoft Graph</span></div></div>
+            <div class="box"><div class="k">Evidence</div><p><a href="https://github.com/Somanathtallapu/ad-identity-lab/tree/main/entra">ad-identity-lab/entra</a></p></div>
           </div>
         </div>
       </details>
 
-      <details class="case" style="--sev:var(--warn)">
+      <details class="case" style="--sev:var(--info)">
         <summary>
           <span class="case-id">CASE-004</span>
-          <h3>Active Directory identity lab</h3>
-          <span class="chips"><span class="chip warn">Identity</span><span class="chip ok">Closed</span></span>
-          <p class="one">Built a Windows domain to practice on-premises identity: users, groups and access by group membership.</p>
+          <h3>Automated privileged access review with Graph PowerShell</h3>
+          <span class="chips"><span class="chip info">Automation</span><span class="chip ok">Closed</span></span>
+          <p class="one">A read-only script that lists every active Entra role holder, flags escalation-path roles and guests, and exports timestamped CSV evidence.</p>
           <span class="toggle"><span class="o">Hide case details ▲</span><span class="c">Open case details ▼</span></span>
         </summary>
         <div class="body">
           <ol class="timeline">
-            <li><span class="step">Domain</span><span>Set up a Windows domain environment to practice identity and access management.</span></li>
-            <li><span class="step">Accounts</span><span>Created user accounts and organized them into groups.</span></li>
-            <li><span class="step">Access</span><span>Granted access to resources based on group membership.</span></li>
-            <li><span class="step">Report</span><span>Documented setup and configuration steps on GitHub.</span></li>
+            <li><span class="step">Connect</span><span>Connects to Microsoft Graph with read-only scopes only, so the script cannot change anything even if misused.</span></li>
+            <li><span class="step">Resolve</span><span>Reads each member's type (user, group or service principal) instead of assuming users, which is where hidden app assignments live.</span></li>
+            <li><span class="step">Flag</span><span>Marks high-risk roles that can reach Global Admin and counts guests in privileged roles separately.</span></li>
+            <li><span class="step">Evidence</span><span>Writes a timestamped CSV, so an auditor gets a file, not a screenshot.</span></li>
           </ol>
           <div class="side">
-            <div class="box"><div class="k">Tools</div><div class="tags"><span class="tag">Active Directory</span><span class="tag">Windows</span><span class="tag">VirtualBox</span></div></div>
-            <div class="box"><div class="k">Evidence</div><p><a href="https://github.com/Somanathtallapu/ad-identity-lab">github.com/Somanathtallapu/ad-identity-lab</a></p></div>
+            <div class="box"><div class="k">Bug fixed</div><p>In PowerShell 5.1 a count came back blank for exactly one match. Fixed with <code>@(...)</code> to force an array.</p></div>
+            <div class="box"><div class="k">Tools</div><div class="tags"><span class="tag">PowerShell</span><span class="tag">Microsoft Graph SDK</span><span class="tag">CSV</span></div></div>
           </div>
         </div>
       </details>
@@ -257,20 +265,22 @@ status:     confirmed true positive</pre>
       <details class="case" style="--sev:var(--info)">
         <summary>
           <span class="case-id">CASE-005</span>
-          <h3>Organizational study of Amazon, focused on AWS</h3>
-          <span class="chips"><span class="chip info">Research</span><span class="chip ok">Closed</span></span>
-          <p class="one">BBA final-year project, Osmania University, 2022–23. Solo research into how Amazon is organized and how AWS delivers cloud services.</p>
+          <h3>Joiner onboarding automation in PowerShell</h3>
+          <span class="chips"><span class="chip info">Automation</span><span class="chip ok">Closed</span></span>
+          <p class="one">Reads a CSV of new hires and creates each AD account in the right OU and role group, with contractor expiry and an audit log.</p>
           <span class="toggle"><span class="o">Hide case details ▲</span><span class="c">Open case details ▼</span></span>
         </summary>
         <div class="body">
           <ol class="timeline">
-            <li><span class="step">Scope</span><span>Studied Amazon's structure and business units, with a deep focus on Amazon Web Services.</span></li>
-            <li><span class="step">Research</span><span>Gathered material from Amazon's annual reports, company publications and online sources.</span></li>
-            <li><span class="step">Analysis</span><span>Explained the AWS cloud model and how it serves business customers, and completed a SWOT analysis of Amazon.</span></li>
-            <li><span class="step">Report</span><span>Wrote a 75-page report and presented the findings to faculty.</span></li>
+            <li><span class="step">Input</span><span>new-hires.csv with name, department, title, type and end date.</span></li>
+            <li><span class="step">Route</span><span>A department lookup table maps each person to their OU and role group; adding a department is one line.</span></li>
+            <li><span class="step">Create</span><span>Creates the account, forces a password change at first logon, skips anyone who already exists.</span></li>
+            <li><span class="step">Expire</span><span>Contractors get an automatic expiration date, so nobody has to remember to offboard them.</span></li>
+            <li><span class="step">Log</span><span>Writes a timestamped audit log of every action plus an on-screen summary.</span></li>
           </ol>
           <div class="side">
-            <div class="box"><div class="k">Tools</div><div class="tags"><span class="tag">MS Word</span><span class="tag">Excel</span><span class="tag">PowerPoint</span></div></div>
+            <div class="box"><div class="k">Tools</div><div class="tags"><span class="tag">PowerShell</span><span class="tag">ActiveDirectory module</span><span class="tag">CSV</span></div></div>
+            <div class="box"><div class="k">Evidence</div><p><a href="https://github.com/Somanathtallapu/ad-identity-lab/tree/main/scripts">ad-identity-lab/scripts</a></p></div>
           </div>
         </div>
       </details>
@@ -281,10 +291,10 @@ status:     confirmed true positive</pre>
   <section aria-labelledby="skills-h">
     <h2 id="skills-h">Skills</h2>
     <div class="card">
-      <div class="skillrow"><span class="k">Security monitoring</span><span>Wazuh SIEM, alert triage, Windows Security event review, MITRE ATT&amp;CK mapping</span></div>
-      <div class="skillrow"><span class="k">Identity &amp; access</span><span>Microsoft Entra ID, Active Directory, joiner/mover/leaver, security groups, SSO, MFA, least privilege</span></div>
-      <div class="skillrow"><span class="k">Systems</span><span>Windows 11, Ubuntu Linux, Kali Linux, PowerShell, VirtualBox</span></div>
-      <div class="skillrow"><span class="k">Networking</span><span>TCP/IP fundamentals, DNS concepts, isolated lab networks, NTLM authentication concepts</span></div>
+      <div class="skillrow"><span class="k">Security monitoring</span><span>Wazuh SIEM, alert triage, Windows Security event IDs, MITRE ATT&amp;CK, detection coverage gaps</span></div>
+      <div class="skillrow"><span class="k">Identity &amp; access</span><span>Active Directory, Microsoft Entra ID, joiner/mover/leaver, RBAC, delegated admin, SSO (OIDC), MFA, Conditional Access design</span></div>
+      <div class="skillrow"><span class="k">Automation</span><span>PowerShell, ActiveDirectory module, Microsoft Graph SDK, CSV reporting</span></div>
+      <div class="skillrow"><span class="k">Systems</span><span>Windows Server 2025, Group Policy, DNS, Windows 11, Kali Linux, VirtualBox</span></div>
       <div class="skillrow"><span class="k">Professional</span><span>Technical write-ups, GitHub documentation, Microsoft Office</span></div>
     </div>
   </section>
